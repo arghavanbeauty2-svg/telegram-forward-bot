@@ -1,13 +1,12 @@
 from telethon import TelegramClient, events
-from flask import Flask
-import threading
 import re
 import os
 
 # تنظیمات ربات
-api_id = 49360
-api_hash = 'bffa5a33120b8473975d3deaee27cf97'
-bot_token = '8205194062:AAFJC24U0Dy7x7MiEk1f9EON26UN48EC49k'
+api_id = int(os.environ.get("API_ID", 49360))
+api_hash = os.environ.get("API_HASH", 'bffa5a33120b8473975d3deaee27cf97')
+bot_token = os.environ.get("BOT_TOKEN", '8205194062:AAFJC24U0Dy7x7MiEk1f9EON26UN48EC49k')
+
 source_channels = ['@nim_beyt', '@tk_khati', '@biotextve', '@janierami']
 destination_channel = '@sher_khoub'
 channel_signature = 'منبع: @sher_khoub (شعر خوب نوش جان کن)'
@@ -28,17 +27,13 @@ client = TelegramClient('bot', api_id, api_hash).start(bot_token=bot_token)
 
 # هندلر برای کانال‌های منبع
 @client.on(events.NewMessage(chats=source_channels))
-async def handler(event):
+async def handle_channel_post(event):
     message = event.message
-    text = message.text if message.text else ''
+    text = message.text or ''
 
-    is_ad = False
-    if text:
-        text_lower = text.lower()
-        if any(keyword in text_lower for keyword in ad_keywords):
-            is_ad = True
-        if ad_pattern.search(text):
-            is_ad = True
+    # بررسی تبلیغاتی بودن
+    text_lower = text.lower()
+    is_ad = any(keyword in text_lower for keyword in ad_keywords) or ad_pattern.search(text)
 
     if not is_ad:
         new_text = f"{text}\n\n{channel_signature}" if text else channel_signature
@@ -51,7 +46,7 @@ async def handler(event):
 
 # هندلر برای پیام‌های خصوصی از کاربر مجاز
 @client.on(events.NewMessage(incoming=True))
-async def user_message_handler(event):
+async def handle_private_message(event):
     if not event.is_private:
         return
 
@@ -60,7 +55,7 @@ async def user_message_handler(event):
         return
 
     message = event.message
-    text = message.text if message.text else ''
+    text = message.text or ''
     new_text = f"{text}\n\n{channel_signature}" if text else channel_signature
     await client.send_message(
         destination_channel,
@@ -69,21 +64,6 @@ async def user_message_handler(event):
         parse_mode='html'
     )
 
-# اجرای ربات در یک Thread جداگانه
-def run_bot():
-    print("ربات شروع شد...")
-    client.run_until_disconnected()
-
-bot_thread = threading.Thread(target=run_bot)
-bot_thread.start()
-
-# راه‌اندازی وب‌سرور ساده با Flask برای Render
-app = Flask(__name__)
-
-@app.route('/')
-def home():
-    return "ربات تلگرام فعال است ✅"
-
-if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 10000))
-    app.run(host='0.0.0.0', port=port)
+# اجرای ربات
+print("✅ ربات فعال شد و منتظر پیام‌هاست...")
+client.run_until_disconnected()

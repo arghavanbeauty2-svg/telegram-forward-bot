@@ -8,7 +8,7 @@ bot_token = '8205194062:AAFJC24U0Dy7x7MiEk1f9EON26UN48EC49k'
 source_channels = ['@nim_beyt', '@tk_khati', '@biotextve', '@janierami']  # کانال‌های منبع
 destination_channel = '@sher_khoub'  # کانال مقصد
 channel_signature = 'منبع: @sher_khoub (شعر خوب نوش جان کن)'  # امضای زیر هر پست
-allowed_user = '@janierami'  # نام کاربری مجاز برای ارسال پیام به ربات
+allowed_user = 'janierami'  # نام کاربری مجاز برای ارسال پیام به ربات (بدون @)
 
 # کلمات کلیدی تبلیغاتی برای فیلتر
 ad_keywords = [
@@ -44,17 +44,19 @@ async def handler(event):
         await client.send_message(
             destination_channel,
             message=new_text,
-            file=message.media,  # کپی عکس، ویدیو یا فایل
+            file=message.media,
             parse_mode='html'
         )
 
-# هندلر برای پیام‌های فرستاده به ربات (فقط از کاربر مجاز)
-@client.on(events.NewMessage(incoming=True, private=True))
+# هندلر برای پیام‌های خصوصی به ربات (فقط از کاربر مجاز)
+@client.on(events.NewMessage(incoming=True))
 async def user_message_handler(event):
-    # چک کردن اینکه فرستنده کاربر مجاز باشه
+    if not event.is_private:
+        return  # فقط پیام‌های خصوصی را پردازش کن
+
     sender = await event.get_sender()
     if sender.username != allowed_user:
-        return  # اگه کاربر مجاز نبود، نادیده بگیر
+        return  # اگر کاربر مجاز نبود، نادیده بگیر
 
     message = event.message
     text = message.text if message.text else ''
